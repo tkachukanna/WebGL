@@ -86,18 +86,74 @@ function draw() {
     surface.Draw();
 }
 
-function CreateSurfaceData()
-{
-    let vertexList = [];
+function calcZ(u, v, T) {
+    let c = (1 - u) * Math.sqrt((1 - v) / (1/3 + v));
+    let a = Math.sqrt(3) * u * T;
+    let b = T - u * T;
 
-    for (let i=0; i<360; i+=5) {
-        vertexList.push( Math.sin(deg2rad(i)), 1, Math.cos(deg2rad(i)) );
-        vertexList.push( Math.sin(deg2rad(i)), 0, Math.cos(deg2rad(i)) );
-    }
+    let bigB = b + a;
+    let bigC = (1 / 3) * (2 * a * b + a**2 + 3 * c**2 * T**2);
+    let bigD = (1 / 3) * (c**2 * T**2 * b - a * c**2 * T**2 - a**2 * b / 3 - a**3 / 9);
 
-    return vertexList;
+    let q = 2 * bigB**3 / 27 - bigB * bigC / 3 + bigD;
+    let p = bigC - bigB**2 / 3;
+
+    let disc = q**2 / 4 + p**3 / 27;
+
+    let x = Math.cbrt(-q / 2 + Math.sqrt(disc)) + Math.cbrt(-q / 2 - Math.sqrt(disc));
+    
+    let z = x - bigB / 3;
+
+    return z;
 }
 
+function calcSurfaceEquation(u, v) {
+    
+    const L = 4;
+    const T = 2;
+    const B = 0.5;
+   
+    let x = L * u;
+    let y = 2.5426 * B * (1 - u) * Math.sqrt((1 - v) / (1 / 3 + v));
+
+    let z = B * u / Math.sqrt(3) + B * (1 - u);
+  
+    return { x: x*0.3, y: y*0.3, z: z*0.3 }
+}
+
+function CreateSurfaceData()
+{
+    let vertexListPosY = [];
+    let vertexListNegY = [];
+
+    const minU = 0;
+    const maxU = 1;
+    const stepU = 0.1;
+
+    const minV = -0.3;
+    const maxV = 1;
+    const stepV = 0.1;
+
+    
+
+    for(let i = minU; i <= maxU; i += stepU) {
+        for(let j = minV; j <= maxV; j += stepV) {
+            let vertex = calcSurfaceEquation(i, j);
+            vertexListPosY.push(vertex.x, vertex.y, vertex.z);
+            vertexListNegY.push(vertex.x, -vertex.y, vertex.z);
+        }
+    }
+    
+    for(let j = minV; j <= maxV; j += stepV) {
+        for(let i = minU; i <= maxU; i += stepU) {
+            let vertex = calcSurfaceEquation(i, j);
+            vertexListPosY.push(vertex.x, vertex.y, vertex.z);
+            vertexListNegY.push(vertex.x, -vertex.y, vertex.z);
+        }
+    }
+    const vertexList = vertexListPosY.concat(vertexListNegY);
+    return vertexList;
+}
 
 /* Initialize the WebGL context. Called from init() */
 function initGL() {
