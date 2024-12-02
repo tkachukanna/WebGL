@@ -86,27 +86,6 @@ function draw() {
     surface.Draw();
 }
 
-function calcZ(u, v, T) {
-    let c = (1 - u) * Math.sqrt((1 - v) / (1/3 + v));
-    let a = Math.sqrt(3) * u * T;
-    let b = T - u * T;
-
-    let bigB = b + a;
-    let bigC = (1 / 3) * (2 * a * b + a**2 + 3 * c**2 * T**2);
-    let bigD = (1 / 3) * (c**2 * T**2 * b - a * c**2 * T**2 - a**2 * b / 3 - a**3 / 9);
-
-    let q = 2 * bigB**3 / 27 - bigB * bigC / 3 + bigD;
-    let p = bigC - bigB**2 / 3;
-
-    let disc = q**2 / 4 + p**3 / 27;
-
-    let x = Math.cbrt(-q / 2 + Math.sqrt(disc)) + Math.cbrt(-q / 2 - Math.sqrt(disc));
-    
-    let z = x - bigB / 3;
-
-    return z;
-}
-
 function calcSurfaceEquation(u, v) {
     
     const L = 4;
@@ -133,8 +112,6 @@ function CreateSurfaceData()
     const minV = -0.3;
     const maxV = 1;
     const stepV = 0.1;
-
-    
 
     for(let i = minU; i <= maxU; i += stepU) {
         for(let j = minV; j <= maxV; j += stepV) {
