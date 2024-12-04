@@ -5,10 +5,12 @@ let surface;                    // A surface model
 let shProgram;                  // A shader program
 let spaceball;                  // A SimpleRotator object that lets the user rotate the view by mouse.
 
+let horizontalLinesAmount = 0;  
+let verticalLinesAmount = 0; 
+
 function deg2rad(angle) {
     return angle * Math.PI / 180;
 }
-
 
 // Constructor
 function Model(name) {
@@ -17,20 +19,26 @@ function Model(name) {
     this.count = 0;
 
     this.BufferData = function(vertices) {
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STREAM_DRAW);
-
-        this.count = vertices.length/3;
+        this.count = vertices.length;
     }
 
     this.Draw = function() {
-
         gl.bindBuffer(gl.ARRAY_BUFFER, this.iVertexBuffer);
         gl.vertexAttribPointer(shProgram.iAttribVertex, 3, gl.FLOAT, false, 0, 0);
         gl.enableVertexAttribArray(shProgram.iAttribVertex);
    
-        gl.drawArrays(gl.LINE_STRIP, 0, this.count);
+        gl.drawArrays(gl.LINE_STRIP, 0, 40);
+        for (let i = 0; i < horizontalLinesAmount - 1; i++ ) {
+            gl.drawArrays(gl.LINE_STRIP, verticalLinesAmount * i + 41, verticalLinesAmount-1);
+        }
+        for (let i = 0; i < verticalLinesAmount; i++ ) {
+            if(i === 40) {
+                continue;
+            }
+            gl.drawArrays(gl.LINE_STRIP, this.count/6 + (horizontalLinesAmount * i), horizontalLinesAmount);
+        }   
     }
 }
 
@@ -87,48 +95,53 @@ function draw() {
 }
 
 function calcSurfaceEquation(u, v) {
-    
-    const L = 4;
-    const T = 2;
-    const B = 0.5;
-   
-    let x = L * u;
-    let y = 2.5426 * B * (1 - u) * Math.sqrt((1 - v) / (1 / 3 + v));
+    const L = +document.getElementById("l").value;
+    const T = +document.getElementById("t").value;
+    const B = +document.getElementById("b").value;
 
-    let z = B * u / Math.sqrt(3) + B * (1 - u);
-  
-    return { x: x*0.3, y: y*0.3, z: z*0.3 }
+    document.getElementById("l-value").innerText = L;
+    document.getElementById("t-value").innerText = T;
+    document.getElementById("b-value").innerText = B;
+
+    let x = L * u;
+    let y = 3 * T * v / (1 + v**3) * B * (1 - u);
+    let z = 3 * T * v**2 / (1 + v**3) * B * (1 - u);
+    
+    return { x: x/3, y: y/3, z: z/3 }
 }
 
 function CreateSurfaceData()
 {
-    let vertexListPosY = [];
-    let vertexListNegY = [];
+    horizontalLinesAmount = 0;
+    verticalLinesAmount = 0;
+
+    let vertexList = [];
 
     const minU = 0;
     const maxU = 1;
     const stepU = 0.1;
 
-    const minV = -0.3;
-    const maxV = 1;
+    const minV = -5;
+    const maxV = 5;
     const stepV = 0.1;
 
-    for(let i = minU; i <= maxU; i += stepU) {
-        for(let j = minV; j <= maxV; j += stepV) {
+    // Полілінії u
+    for(let i = minU; i < maxU; i += stepU) {
+        for(let j = minV; j < maxV; j += stepV) {
             let vertex = calcSurfaceEquation(i, j);
-            vertexListPosY.push(vertex.x, vertex.y, vertex.z);
-            vertexListNegY.push(vertex.x, -vertex.y, vertex.z);
+            vertexList.push(vertex.x, vertex.y, vertex.z); 
         }
+        horizontalLinesAmount++;
     }
     
-    for(let j = minV; j <= maxV; j += stepV) {
-        for(let i = minU; i <= maxU; i += stepU) {
+    // Полілінії v
+    for(let j = minV; j < maxV; j += stepV) {
+        for(let i = minU; i < maxU; i += stepU) {
             let vertex = calcSurfaceEquation(i, j);
-            vertexListPosY.push(vertex.x, vertex.y, vertex.z);
-            vertexListNegY.push(vertex.x, -vertex.y, vertex.z);
+            vertexList.push(vertex.x, vertex.y, vertex.z);
         }
+        verticalLinesAmount++;
     }
-    const vertexList = vertexListPosY.concat(vertexListNegY);
     return vertexList;
 }
 
@@ -210,5 +223,11 @@ function init() {
 
     spaceball = new TrackballRotator(canvas, draw, 0);
 
+    draw();
+}
+
+function updateSurface() {
+    surface = new Model('Surface');
+    surface.BufferData(CreateSurfaceData());
     draw();
 }
