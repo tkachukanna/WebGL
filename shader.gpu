@@ -1,24 +1,55 @@
-
-
 // Vertex shader
 const vertexShaderSource = `
-attribute vec3 vertex;
-uniform mat4 ModelViewProjectionMatrix;
+       attribute vec3 vertex;
+       attribute vec3 normal;
 
-void main() {
-    gl_Position = ModelViewProjectionMatrix * vec4(vertex,1.0);
-}`;
+       uniform mat4 ModelViewProjectionMatrix;
+       uniform mat4 ModelViewMatrix;
+       uniform mat3 NormalMatrix;
 
+       varying vec3 vNormal;
+       varying vec3 vPosition;
+
+       void main(void) {
+           vec4 pos = ModelViewMatrix * vec4(vertex, 1.0);
+           vPosition = pos.xyz;
+           vNormal = normalize(NormalMatrix * normal);
+           gl_Position = ModelViewProjectionMatrix * vec4(vertex, 1.0);
+       }
+   `;
 
 // Fragment shader
 const fragmentShaderSource = `
-#ifdef GL_FRAGMENT_PRECISION_HIGH
-   precision highp float;
-#else
-   precision mediump float;
-#endif
+       precision mediump float;
 
-uniform vec4 color;
-void main() {
-    gl_FragColor = color;
-}`;
+       varying vec3 vNormal;
+       varying vec3 vPosition;
+
+       uniform vec4 color;
+       uniform vec3 lightPosition;   // Light position in eye space
+       uniform vec3 Ka;         // Ambient reflectivity
+       uniform vec3 Kd;         // Diffuse reflectivity
+       uniform vec3 Ks;         // Specular reflectivity
+       uniform float shininess;
+
+       void main(void) {
+           vec3 N = normalize(vNormal);
+           vec3 L = normalize(lightPosition - vPosition);
+           vec3 V = vec3(0,0,1);
+           vec3 R = reflect(-L, N);
+
+           float diff = max(dot(N, L), 0.0);
+           
+           float spec = 0.0;
+           if(diff > 0.0) {
+               spec = pow(max(dot(R,V), 0.0), shininess);
+           }
+
+           vec3 ambient = Ka;
+           vec3 diffuse = Kd * diff;
+           vec3 specular = Ks * spec;
+
+           vec3 finalColor = ambient + diffuse + specular;
+           gl_FragColor = vec4(finalColor, 1.0) * color;
+       }
+   `;
