@@ -6,10 +6,10 @@ export default function Model(gl, uGranularity, vGranularity, L, T, B)  {
     this.T = T;
     this.B = B;
 
-    this.minU = 0.0;
-    this.maxU = 1.0;
+    this.minU = 0;
+    this.maxU = 1;
     this.minV = -0.3;
-    this.maxV = 1.0;
+    this.maxV = 1;
 
     this.init = function () {
         this.createSurfaceData();

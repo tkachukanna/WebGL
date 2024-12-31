@@ -8,9 +8,16 @@ let spaceball;                  // A SimpleRotator object that lets the user rot
 let lightAngle = 0.0;
 let u, v;
 let L, T, B;
+let scale;
 
 let diffuseTexture, specularTexture, normalTexture;
 let texturesLoaded = 0;
+
+let pointU = 0.5;
+let pointV = 0.5;
+const pointStep = 0.01;
+
+let texScaleValue = 1.0;
 
 // Constructor
 function ShaderProgram(name, program) {
@@ -19,7 +26,6 @@ function ShaderProgram(name, program) {
     // Location of the attribute variable in the shader program.
     this.iAttribVertex = -1;
     this.iAttribNormal = -1;
-
     this.iAttribUV = -1;
     this.iAttribTangent = -1;
     this.iAttribBitangent = -1;
@@ -37,6 +43,9 @@ function ShaderProgram(name, program) {
     this.iDiffuseTex = -1;
     this.iSpecularTex = -1;
     this.iNormalTex = -1;
+    this.iTexScale   = -1;
+    this.iTexPivot   = -1;
+    this.iPointUV = -1;
 
     this.Use = function() {
         gl.useProgram(this.prog);
@@ -132,6 +141,10 @@ function draw() {
     gl.bindTexture(gl.TEXTURE_2D, normalTexture);
     gl.uniform1i(shProgram.iNormalTex, 2);
 
+    gl.uniform2f(shProgram.iTexPivot, pointU, pointV);
+    gl.uniform1f(shProgram.iTexScale, texScaleValue);
+    gl.uniform2f(shProgram.iPointUV, pointU, pointV);
+
     surface.draw(shProgram);
 
     requestAnimationFrame(draw);
@@ -162,6 +175,10 @@ function initGL() {
     shProgram.iDiffuseTex = gl.getUniformLocation(prog, "diffuseTex");
     shProgram.iSpecularTex = gl.getUniformLocation(prog, "specularTex");
     shProgram.iNormalTex = gl.getUniformLocation(prog, "normalTex");
+    shProgram.iTexPivot = gl.getUniformLocation(prog, 'texPivot');
+    shProgram.iTexScale = gl.getUniformLocation(prog, 'texScale');
+    shProgram.iPointUV = gl.getUniformLocation(prog, 'pointUV');
+
 
     gl.enable(gl.DEPTH_TEST);
     gl.depthFunc(gl.LEQUAL);
@@ -257,8 +274,40 @@ function init() {
         updateSurface();
     };
 
+    scale = document.getElementById('scaleSlider');
+    scale.oninput = () => {
+        texScaleValue = parseFloat(scaleSlider.value) / 100.0;
+    };
+
     initGL();
     spaceball = new TrackballRotator(canvas, null, 0);
+    window.addEventListener('keydown', (ev) => {
+        switch (ev.key) {
+            case 'a':
+            case 'A':
+                pointU += pointStep;
+                if (pointU > 1.0) pointU = 1.0;
+                break;
+            case 'd':
+            case 'D':
+                pointU -= pointStep;
+                if (pointU < 0.0) pointU = 0.0;
+                break;
+            case 'w':
+            case 'W':
+                pointV += pointStep;
+                if (pointV > 1.0) pointV = 1.0;
+                break;
+            case 's':
+            case 'S':
+                pointV -= pointStep;
+                if (pointV < 0.0) pointV = 0.0;
+                break;
+            default:
+                break;
+        }
+    });
+
     draw();
 }
 
